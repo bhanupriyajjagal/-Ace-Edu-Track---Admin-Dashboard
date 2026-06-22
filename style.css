@@ -1,0 +1,58 @@
+body {
+    font-family: Arial;
+    margin: 0;
+    background: #f4f7fc;
+}
+
+nav {
+    background: #2563eb;
+    color: white;
+    padding: 20px;
+}
+
+.container {
+    width: 90%;
+    margin: auto;
+}
+
+.card {
+    background: white;
+    margin-top: 20px;
+    padding: 20px;
+    border-radius: 10px;
+}
+
+input {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 15px;
+    box-sizing: border-box;
+}
+
+button {
+    width: 100%;
+    padding: 12px;
+    background: #2563eb;
+    color: white;
+    border: none;
+    cursor: pointer;
+}
+
+button:hover {
+    background: #1e40af;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+table th,
+table td {
+    border: 1px solid #ddd;
+    padding: 12px;
+}
+
+table th {
+    background: #f1f1f1;
+}

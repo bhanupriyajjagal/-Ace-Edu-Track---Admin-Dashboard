@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Ace Edu Track - Admin Dashboard</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<nav>
+    <h1>Ace Edu Track (Admin Panel)</h1>
+</nav>
+
+<div class="container">
+
+    <div class="card">
+        <h2>Register New Student</h2>
+
+        <form id="studentForm">
+
+            <label>Roll Number</label>
+            <input type="text" id="roll_no" required>
+
+            <label>First Name</label>
+            <input type="text" id="first_name" required>
+
+            <label>Last Name</label>
+            <input type="text" id="last_name" required>
+
+            <label>Branch</label>
+            <input type="text" id="branch" required>
+
+            <label>Year</label>
+            <input
+                type="number"
+                id="year_of_study"
+                min="1"
+                max="4"
+                required>
+
+            <label>Section</label>
+            <input type="text" id="section" required>
+
+            <button type="submit">
+                Add Student
+            </button>
+
+        </form>
+    </div>
+
+    <div class="card">
+        <h2>Student Roster</h2>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Roll No</th>
+                    <th>Name</th>
+                    <th>Branch</th>
+                    <th>Year / Section</th>
+                </tr>
+            </thead>
+
+            <tbody id="studentTableBody">
+            </tbody>
+        </table>
+    </div>
+
+</div>
+
+<script>
+
+const API_URL =
+'http://127.0.0.1:5000/api/students';
+
+
+async function fetchStudents() {
+
+    const response = await fetch(API_URL);
+    const students = await response.json();
+
+    const table =
+        document.getElementById(
+            'studentTableBody'
+        );
+
+    table.innerHTML = '';
+
+    students.forEach(student => {
+
+        table.innerHTML += `
+            <tr>
+                <td>${student.roll_no}</td>
+                <td>
+                    ${student.first_name}
+                    ${student.last_name}
+                </td>
+                <td>${student.branch}</td>
+                <td>
+                    ${student.year_of_study}
+                    -
+                    ${student.section}
+                </td>
+            </tr>
+        `;
+    });
+}
+
+
+document.getElementById('studentForm')
+.addEventListener('submit',
+async function (e) {
+
+    e.preventDefault();
+
+    const student = {
+
+        roll_no:
+        document.getElementById(
+            'roll_no'
+        ).value,
+
+        first_name:
+        document.getElementById(
+            'first_name'
+        ).value,
+
+        last_name:
+        document.getElementById(
+            'last_name'
+        ).value,
+
+        branch:
+        document.getElementById(
+            'branch'
+        ).value,
+
+        year_of_study:
+        parseInt(
+            document.getElementById(
+                'year_of_study'
+            ).value
+        ),
+
+        section:
+        document.getElementById(
+            'section'
+        ).value
+    };
+
+    const response =
+        await fetch(API_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type':
+                'application/json'
+            },
+            body:
+            JSON.stringify(student)
+        });
+
+    const result =
+        await response.json();
+
+    if (response.ok) {
+        alert(result.message);
+        document.getElementById(
+            'studentForm'
+        ).reset();
+        fetchStudents();
+    }
+    else {
+        alert(result.error);
+    }
+});
+
+fetchStudents();
+
+</script>
+
+</body>
+</html>
