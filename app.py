@@ -1,154 +1,132 @@
 import streamlit as st
-import mysql.connector
 import pandas as pd
+import plotly.express as px
 
-# ------------------------------
-# Database Connection
-# ------------------------------
-db = mysql.connector.connect(
-    host="localhost",
-    user="root",
-    password="",
-    database="engineeringcollege"
-)
-
-cursor = db.cursor()
-
+# Page Config
 st.set_page_config(
-    page_title="Ace Edu Track",
+    page_title="Engineering College Dashboard",
     page_icon="🎓",
     layout="wide"
 )
 
-st.title("🎓 Ace Edu Track - Admin Dashboard")
+# Load Data
+@st.cache_data
+def load_data():
+    return pd.read_csv("engineering_colleges.csv")
 
-# ------------------------------
-# Register Student Form
-# ------------------------------
-st.header("Register New Student")
+df = load_data()
 
-with st.form("student_form"):
+# Title
+st.title("🎓 Engineering College Dashboard")
+st.markdown("Analyze engineering colleges, branches, fees, placements, and rankings.")
 
-    roll_no = st.text_input("Roll Number")
-    first_name = st.text_input("First Name")
-    last_name = st.text_input("Last Name")
+# Sidebar Filters
+st.sidebar.header("Filters")
 
-    col1, col2, col3 = st.columns(3)
-
-    with col1:
-        branch = st.selectbox(
-            "Branch",
-            ["CSE", "CSM", "AIML", "ECE", "EEE", "MECH"]
-        )
-
-    with col2:
-        year = st.selectbox(
-            "Year",
-            [1, 2, 3, 4]
-        )
-
-    with col3:
-        section = st.selectbox(
-            "Section",
-            ["A", "B", "C"]
-        )
-
-    submitted = st.form_submit_button(
-        "➕ Add Student"
-    )
-
-    if submitted:
-
-        try:
-
-            sql = """
-            INSERT INTO students
-            (roll_no,
-             first_name,
-             last_name,
-             branch,
-             year_of_study,
-             section)
-            VALUES (%s,%s,%s,%s,%s,%s)
-            """
-
-            values = (
-                roll_no,
-                first_name,
-                last_name,
-                branch,
-                year,
-                section
-            )
-
-            cursor.execute(sql, values)
-            db.commit()
-
-            st.success(
-                "Student added successfully!"
-            )
-
-        except Exception as e:
-            st.error(f"Error: {e}")
-
-# ------------------------------
-# Display Student Roster
-# ------------------------------
-st.header("📋 Student Roster")
-
-cursor.execute("""
-SELECT
-roll_no,
-first_name,
-last_name,
-branch,
-year_of_study,
-section
-FROM students
-""")
-
-rows = cursor.fetchall()
-
-df = pd.DataFrame(
-    rows,
-    columns=[
-        "Roll No",
-        "First Name",
-        "Last Name",
-        "Branch",
-        "Year",
-        "Section"
-    ]
+selected_branch = st.sidebar.multiselect(
+    "Select Branch",
+    options=df["Branch"].unique(),
+    default=df["Branch"].unique()
 )
 
+selected_city = st.sidebar.multiselect(
+    "Select City",
+    options=df["City"].unique(),
+    default=df["City"].unique()
+)
+
+filtered_df = df[
+    (df["Branch"].isin(selected_branch)) &
+    (df["City"].isin(selected_city))
+]
+
+# KPIs
+col1, col2, col3, col4 = st.columns(4)
+
+col1.metric("Total Colleges", filtered_df["College Name"].nunique())
+col2.metric("Average Fees", f"₹{int(filtered_df['Fees'].mean()):,}")
+col3.metric("Average Placement %", f"{filtered_df['Placement %'].mean():.1f}%")
+col4.metric("Highest Package", f"₹{filtered_df['Highest Package'].max()} LPA")
+
+st.divider()
+
+# Placement Analysis
+col1, col2 = st.columns(2)
+
+with col1:
+    fig = px.bar(
+        filtered_df,
+        x="College Name",
+        y="Placement %",
+        color="Placement %",
+        title="Placement Percentage by College"
+    )
+    st.plotly_chart(fig, use_container_width=True)
+
+with col2:
+    fig = px.bar(
+        filtered_df,
+        x="College Name",
+        y="Highest Package",
+        color="Highest Package",
+        title="Highest Package Offered"
+    )
+    st.plotly_chart(fig, use_container_width=True)
+
+st.divider()
+
+# Branch Distribution
+col1, col2 = st.columns(2)
+
+with col1:
+    fig = px.pie(
+        filtered_df,
+        names="Branch",
+        title="Branch Distribution"
+    )
+    st.plotly_chart(fig, use_container_width=True)
+
+with col2:
+    fig = px.scatter(
+        filtered_df,
+        x="Fees",
+        y="Placement %",
+        size="Highest Package",
+        color="Branch",
+        hover_name="College Name",
+        title="Fees vs Placement %"
+    )
+    st.plotly_chart(fig, use_container_width=True)
+
+st.divider()
+
+# Ranking Chart
+fig = px.bar(
+    filtered_df.sort_values("Rank"),
+    x="College Name",
+    y="Rank",
+    color="City",
+    title="College Ranking"
+)
+
+st.plotly_chart(fig, use_container_width=True)
+
+st.divider()
+
+# Data Table
+st.subheader("College Data")
+
 st.dataframe(
-    df,
+    filtered_df,
     use_container_width=True
 )
 
-# ------------------------------
-# Dashboard Metrics
-# ------------------------------
-st.header("📊 Dashboard")
+# Download Option
+csv = filtered_df.to_csv(index=False)
 
-col1, col2, col3 = st.columns(3)
-
-with col1:
-    st.metric(
-        "Total Students",
-        len(df)
-    )
-
-with col2:
-    st.metric(
-        "Branches",
-        df["Branch"].nunique()
-        if not df.empty else 0
-    )
-
-with col3:
-    st.metric(
-        "Sections",
-        df["Section"].nunique()
-        if not df.empty else 0
-    )
+st.download_button(
+    label="📥 Download Data",
+    data=csv,
+    file_name="filtered_college_data.csv",
+    mime="text/csv"
+)
