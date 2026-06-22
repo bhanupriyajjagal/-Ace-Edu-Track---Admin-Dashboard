@@ -12,8 +12,7 @@ st.set_page_config(
 # Load Data
 @st.cache_data
 def load_data():
-    return pd.read_csv("engineering_colleges.csv")
-
+    return pd.read_csv("engg_colleges.csv")
 df = load_data()
 
 # Title
